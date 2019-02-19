@@ -11,26 +11,6 @@ from make_datafiles import get_art_abs
 tqdm.monitor_interval = 0
 from collections import Counter
 
-print("Loaded libraries...")
-
-parser = argparse.ArgumentParser(
-    description="Builds an extractive summary from a json prediction.")
-
-parser.add_argument('-src', required=True, type=str,
-                    help="""Path of the src file""")
-parser.add_argument('-tgt', required=True, type=str,
-                    help="""Path of the tgt file""")
-
-parser.add_argument('-output', type=str,
-                    default='data/processed/multicopy',
-                    help="""Path of the output files""")
-
-parser.add_argument('-prune', type=int, default=200,
-                    help="Prune to that number of words.")
-parser.add_argument('-num_examples', type=int, default=100000,
-                    help="Prune to that number of examples.")
-
-opt = parser.parse_args()
 
 
 def compile_substring(start, end, split):
@@ -79,7 +59,7 @@ def make_BIO_tgt(s, t):
     return " ".join(matches)
 
 def process(article, abstract):
-    ssplit = splits(article, num=opt.prune)
+    ssplit = splits(article)
     # Skip empty lines
     if len(ssplit) < 2 or len(abstract.split()) < 2:
         return None
@@ -151,6 +131,24 @@ def main():
         out_path = os.path.join(out_dir, s)
         article, abstract = get_art_abs(in_path)
         tags = process(article, abstract)
+        if tags is None:
+            print(s)
+            tags = ""
+        fp = open(out_path, 'w')
+        fp.write(tags)
+        fp.close()
+    
+    stories_dir = dm_stories_dir
+    out_dir = dm_label_dir
+    stories = os.listdir(stories_dir)
+    for s in stories:
+        in_path = os.path.join(stories_dir, s)
+        out_path = os.path.join(out_dir, s)
+        article, abstract = get_art_abs(in_path)
+        tags = process(article, abstract)
+        if tags is None:
+            print(s)
+            tags = ""
         fp = open(out_path, 'w')
         fp.write(tags)
         fp.close()
