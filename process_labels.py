@@ -131,7 +131,6 @@ def get_art_abs_lbs(story_file, label_file):
     article_lines = []
     highlights = []
     next_is_highlight = False
-    fixed_labels = []
     for idx, line in enumerate(lines):
         if line == "":
             continue  # empty line
@@ -141,18 +140,12 @@ def get_art_abs_lbs(story_file, label_file):
             highlights.append(line)
         else:
             article_lines.append(line)
-            lb = labels[idx].split()
-            while len(lb) != len(line.split()):
-                print(len(lb), len(line.split()))
-                if len(lb) > len(line.split()):
-                    print("labels are more breaking")
-                    break
-                lb.append(0)
-            fixed_labels.append(" ".join(lb))
 
     # Make article into a single string
-    article = '<split1>'.join(article_lines)
-    labels = '<split1>'.join(fixed_labels)
+    article = ' <split1> '.join(article_lines)
+    if len(article) != len(labels):
+        print(story_file)
+        print("Article and label mismatch, check labeling process")
 
     # Make abstract into a signle string, putting <s> and </s> tags around the sentences
     abstract = ' '.join(["%s %s %s" % (SENTENCE_START, sent, SENTENCE_END) for sent in highlights])

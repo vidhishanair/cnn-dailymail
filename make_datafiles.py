@@ -141,7 +141,7 @@ def get_art_abs(story_file):
             article_lines.append(line)
 
     # Make article into a single string
-    article = '<split1>'.join(article_lines)
+    article = ' <split1> '.join(article_lines)
 
     # Make abstract into a signle string, putting <s> and </s> tags around the sentences
     abstract = ' '.join(["%s %s %s" % (SENTENCE_START, sent, SENTENCE_END) for sent in highlights])
