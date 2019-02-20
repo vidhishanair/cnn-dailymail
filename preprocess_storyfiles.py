@@ -62,11 +62,11 @@ def make_BIO_tgt(s, t):
             edited_matches.append('<split1>')
         else:
             edited_matches.append(tag)
-    print(ssplit)
-    print(edited_matches)
-    print(len(ssplit) == len(edited_matches))
-    exit(0)
-    return " ".join(matches)
+    # print(ssplit)
+    # print(edited_matches)
+    # print(len(ssplit) == len(edited_matches))
+    # exit(0)
+    return " ".join(edited_matches)
 
 def process(article, abstract):
     ssplit = splits(article)
