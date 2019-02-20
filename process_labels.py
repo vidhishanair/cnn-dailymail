@@ -100,7 +100,7 @@ def read_text_file(text_file):
 def hashhex(s):
     """Returns a heximal formated SHA1 hash of the input string."""
     h = hashlib.sha1()
-    h.update(s)
+    h.update(s.encode('utf-8'))
     return h.hexdigest()
 
 
@@ -198,7 +198,9 @@ def write_to_bin(url_file, out_file, makevocab=False):
 
             # Get the strings to write to .bin file
             article, abstract, labels = get_art_abs_lbs(story_file, label_file)
-
+            print(article)
+            print(labels)
+            exit()
             # Write to tf.Example
             tf_example = example_pb2.Example()
             tf_example.features.feature['article'].bytes_list.value.extend([article])
@@ -239,9 +241,6 @@ def check_num_stories(stories_dir, num_expected):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print("USAGE: python make_datafiles.py <cnn_stories_dir> <dailymail_stories_dir>")
-        sys.exit()
     cnn_stories_dir = 'cnn_stories_tokenized'
     cnn_label_dir = 'cnn_stories_labelled'
     dm_stories_dir = 'dm_stories_tokenized'
@@ -250,7 +249,7 @@ if __name__ == '__main__':
     # Check the stories directories contain the correct number of .story files
     check_num_stories(cnn_stories_dir, num_expected_cnn_stories)
     check_num_stories(dm_stories_dir, num_expected_dm_stories)
-    check_num_stories(cnn_label_dir, num_expected_dm_stories)
+    check_num_stories(cnn_label_dir, num_expected_cnn_stories)
     check_num_stories(dm_label_dir, num_expected_dm_stories)
 
     # # Create some new directories

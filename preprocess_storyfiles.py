@@ -30,6 +30,8 @@ def splits(s, num=200):
 def make_BIO_tgt(s, t):
     # tsplit = t.split()
     ssplit = s  # .split()
+    print(ssplit)
+    exit()
     startix = 0
     endix = 0
     matches = []
