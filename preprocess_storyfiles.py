@@ -24,14 +24,12 @@ def format_json(s):
 
 
 def splits(s, num=200):
-    return s.split()[:num]
+    return s.split()
 
 
 def make_BIO_tgt(s, t):
     # tsplit = t.split()
     ssplit = s  # .split()
-    print(ssplit)
-    exit()
     startix = 0
     endix = 0
     matches = []
@@ -58,6 +56,16 @@ def make_BIO_tgt(s, t):
                     matchstrings[full_string] += 1
                 # endix += 1
             startix = endix
+    edited_matches = []
+    for word, tag in zip(ssplit, matches):
+        if word == '<split1>':
+            edited_matches.append('<split1>')
+        else:
+            edited_matches.append(tag)
+    print(ssplit)
+    print(edited_matches)
+    print(len(ssplit) == len(edited_matches))
+    exit(0)
     return " ".join(matches)
 
 def process(article, abstract):
