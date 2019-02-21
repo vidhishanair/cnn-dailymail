@@ -140,12 +140,29 @@ def get_art_abs_lbs(story_file, label_file):
             highlights.append(line)
         else:
             article_lines.append(line)
-
+    if len(labels) == 0 and len(article_lines)==0:
+        labels = ""
+    elif len(labels) == 0 and len(article_lines)!=0:
+        print(story_file)
+        print(labels)
+        print(article_lines)
+        exit(0)
+    else:
+        labels = labels[0]
     # Make article into a single string
     article = ' <split1> '.join(article_lines)
-    if len(article) != len(labels):
+    if len(article.split()) != len(labels.split()):
         print(story_file)
         print("Article and label mismatch, check labeling process")
+        print(len(article.split()))
+        print(len(labels.split()))
+        print(article)
+        print(labels)
+        a = article.split()
+        b = labels.split()
+        for i in range(len(article.split())):
+            print(a[i],b[i])
+        exit()
 
     # Make abstract into a signle string, putting <s> and </s> tags around the sentences
     abstract = ' '.join(["%s %s %s" % (SENTENCE_START, sent, SENTENCE_END) for sent in highlights])
@@ -198,9 +215,6 @@ def write_to_bin(url_file, out_file, makevocab=False):
 
             # Get the strings to write to .bin file
             article, abstract, labels = get_art_abs_lbs(story_file, label_file)
-            print(article)
-            print(labels)
-            exit()
             # Write to tf.Example
             tf_example = example_pb2.Example()
             tf_example.features.feature['article'].bytes_list.value.extend([article])
