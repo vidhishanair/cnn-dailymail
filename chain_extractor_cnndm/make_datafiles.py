@@ -22,7 +22,7 @@ all_test_urls = "url_lists/all_test.txt"
 
 cnn_tokenized_stories_dir = "cnn_stories_tokenized"
 dm_tokenized_stories_dir = "dm_stories_tokenized"
-finished_files_dir = "finished_files_wlabels_p3"
+finished_files_dir = "finished_files"
 chunks_dir = os.path.join(finished_files_dir, "chunked")
 
 # These are the number of .story files we expect there to be in cnn_stories_dir and dm_stories_dir
@@ -34,7 +34,7 @@ CHUNK_SIZE = 1000  # num examples per chunk, for the chunked data
 
 
 def chunk_file(set_name):
-    in_file = finished_files_dir+'/%s.bin' % set_name
+    in_file = 'finished_files/%s.bin' % set_name
     reader = open(in_file, "rb")
     chunk = 0
     finished = False
@@ -100,7 +100,7 @@ def read_text_file(text_file):
 def hashhex(s):
     """Returns a heximal formated SHA1 hash of the input string."""
     h = hashlib.sha1()
-    h.update(s.encode('utf-8'))
+    h.update(s)
     return h.hexdigest()
 
 
@@ -117,9 +117,8 @@ def fix_missing_period(line):
     return line + " ."
 
 
-def get_art_abs_lbs(story_file, label_file):
+def get_art_abs(story_file):
     lines = read_text_file(story_file)
-    labels = read_text_file(label_file)
 
     # Lowercase everything
     lines = [line.lower() for line in lines]
@@ -140,34 +139,14 @@ def get_art_abs_lbs(story_file, label_file):
             highlights.append(line)
         else:
             article_lines.append(line)
-    if len(labels) == 0 and len(article_lines)==0:
-        labels = ""
-    elif len(labels) == 0 and len(article_lines)!=0:
-        print(story_file)
-        print(labels)
-        print(article_lines)
-        exit(0)
-    else:
-        labels = labels[0]
+
     # Make article into a single string
     article = ' <split1> '.join(article_lines)
-    if len(article.split()) != len(labels.split()):
-        print(story_file)
-        print("Article and label mismatch, check labeling process")
-        print(len(article.split()))
-        print(len(labels.split()))
-        print(article)
-        print(labels)
-        a = article.split()
-        b = labels.split()
-        for i in range(len(article.split())):
-            print(a[i],b[i])
-        exit()
 
     # Make abstract into a signle string, putting <s> and </s> tags around the sentences
     abstract = ' '.join(["%s %s %s" % (SENTENCE_START, sent, SENTENCE_END) for sent in highlights])
 
-    return article, abstract, labels
+    return article, abstract
 
 
 def write_to_bin(url_file, out_file, makevocab=False):
@@ -204,22 +183,14 @@ def write_to_bin(url_file, out_file, makevocab=False):
                 raise Exception(
                     "Tokenized stories directories %s and %s contain correct number of files but story file %s found in neither." % (
                     cnn_tokenized_stories_dir, dm_tokenized_stories_dir, s))
-            if os.path.isfile(os.path.join(cnn_label_dir, s)):
-                label_file = os.path.join(cnn_label_dir, s)
-            elif os.path.isfile(os.path.join(dm_label_dir, s)):
-                label_file = os.path.join(dm_label_dir, s)
-            else:
-                print(
-                    "Error: Couldn't find label story file %s in either label directories %s and %s. Was there an error during labeling?" % (
-                        s, cnn_label_dir, dm_label_dir))
 
             # Get the strings to write to .bin file
-            article, abstract, labels = get_art_abs_lbs(story_file, label_file)
+            article, abstract = get_art_abs(story_file)
+
             # Write to tf.Example
             tf_example = example_pb2.Example()
-            tf_example.features.feature['article'].bytes_list.value.extend([str.encode(article)])
-            tf_example.features.feature['abstract'].bytes_list.value.extend([str.encode(abstract)])
-            tf_example.features.feature['labels'].bytes_list.value.extend([str.encode(labels)])
+            tf_example.features.feature['article'].bytes_list.value.extend([article])
+            tf_example.features.feature['abstract'].bytes_list.value.extend([abstract])
             tf_example_str = tf_example.SerializeToString()
             str_len = len(tf_example_str)
             writer.write(struct.pack('q', str_len))
@@ -255,25 +226,24 @@ def check_num_stories(stories_dir, num_expected):
 
 
 if __name__ == '__main__':
-    cnn_stories_dir = 'cnn_stories_tokenized'
-    cnn_label_dir = 'cnn_stories_labelled_p3'
-    dm_stories_dir = 'dm_stories_tokenized'
-    dm_label_dir = 'dm_stories_labelled_p3'
+    if len(sys.argv) != 3:
+        print("USAGE: python make_datafiles.py <cnn_stories_dir> <dailymail_stories_dir>")
+        sys.exit()
+    cnn_stories_dir = sys.argv[1]
+    dm_stories_dir = sys.argv[2]
 
     # Check the stories directories contain the correct number of .story files
     check_num_stories(cnn_stories_dir, num_expected_cnn_stories)
     check_num_stories(dm_stories_dir, num_expected_dm_stories)
-    check_num_stories(cnn_label_dir, num_expected_cnn_stories)
-    check_num_stories(dm_label_dir, num_expected_dm_stories)
 
-    # # Create some new directories
-    # if not os.path.exists(cnn_tokenized_stories_dir): os.makedirs(cnn_tokenized_stories_dir)
-    # if not os.path.exists(dm_tokenized_stories_dir): os.makedirs(dm_tokenized_stories_dir)
+    # Create some new directories
+    if not os.path.exists(cnn_tokenized_stories_dir): os.makedirs(cnn_tokenized_stories_dir)
+    if not os.path.exists(dm_tokenized_stories_dir): os.makedirs(dm_tokenized_stories_dir)
     if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
-    #
-    # # Run stanford tokenizer on both stories dirs, outputting to tokenized stories directories
-    # tokenize_stories(cnn_stories_dir, cnn_tokenized_stories_dir)
-    # tokenize_stories(dm_stories_dir, dm_tokenized_stories_dir)
+
+    # Run stanford tokenizer on both stories dirs, outputting to tokenized stories directories
+    tokenize_stories(cnn_stories_dir, cnn_tokenized_stories_dir)
+    tokenize_stories(dm_stories_dir, dm_tokenized_stories_dir)
 
     # Read the tokenized stories, do a little postprocessing then write to bin files
     write_to_bin(all_test_urls, os.path.join(finished_files_dir, "test.bin"))

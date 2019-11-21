@@ -16,13 +16,13 @@ END_TOKENS = ['.', '!', '?', '...', "'", "`", '"', dm_single_close_quote, dm_dou
 SENTENCE_START = '<s>'
 SENTENCE_END = '</s>'
 
-all_train_urls = "url_lists/all_train.txt"
-all_val_urls = "url_lists/all_val.txt"
-all_test_urls = "url_lists/all_test.txt"
+all_train_urls = "../url_lists/all_train.txt"
+all_val_urls = "../url_lists/all_val.txt"
+all_test_urls = "../url_lists/all_test.txt"
 
-cnn_tokenized_stories_dir = "cnn_stories_tokenized"
-dm_tokenized_stories_dir = "dm_stories_tokenized"
-finished_files_dir = "finished_files_wlabels_p3"
+cnn_tokenized_stories_dir = "../cnn_stories_tokenized"
+dm_tokenized_stories_dir = "../dm_stories_tokenized"
+finished_files_dir = "../finished_files_wlabels_wnerchains"
 chunks_dir = os.path.join(finished_files_dir, "chunked")
 
 # These are the number of .story files we expect there to be in cnn_stories_dir and dm_stories_dir
@@ -117,9 +117,10 @@ def fix_missing_period(line):
     return line + " ."
 
 
-def get_art_abs_lbs(story_file, label_file):
+def get_art_abs_lbs(story_file, label_file, chains_file):
     lines = read_text_file(story_file)
     labels = read_text_file(label_file)
+    chains = open(chains_file, "r").read()
 
     # Lowercase everything
     lines = [line.lower() for line in lines]
@@ -167,7 +168,7 @@ def get_art_abs_lbs(story_file, label_file):
     # Make abstract into a signle string, putting <s> and </s> tags around the sentences
     abstract = ' '.join(["%s %s %s" % (SENTENCE_START, sent, SENTENCE_END) for sent in highlights])
 
-    return article, abstract, labels
+    return article, abstract, labels, chains
 
 
 def write_to_bin(url_file, out_file, makevocab=False):
@@ -204,6 +205,7 @@ def write_to_bin(url_file, out_file, makevocab=False):
                 raise Exception(
                     "Tokenized stories directories %s and %s contain correct number of files but story file %s found in neither." % (
                     cnn_tokenized_stories_dir, dm_tokenized_stories_dir, s))
+            
             if os.path.isfile(os.path.join(cnn_label_dir, s)):
                 label_file = os.path.join(cnn_label_dir, s)
             elif os.path.isfile(os.path.join(dm_label_dir, s)):
@@ -212,14 +214,24 @@ def write_to_bin(url_file, out_file, makevocab=False):
                 print(
                     "Error: Couldn't find label story file %s in either label directories %s and %s. Was there an error during labeling?" % (
                         s, cnn_label_dir, dm_label_dir))
-
+            
+            if os.path.isfile(os.path.join(cnn_chains_dir, s)):
+                chains_file = os.path.join(cnn_chains_dir, s)
+            elif os.path.isfile(os.path.join(dm_chains_dir, s)):
+                chains_file = os.path.join(dm_chains_dir, s)
+            else:
+                continue
+                print(
+                    "Error: Couldn't find label story file %s in either label directories %s and %s. Was there an error during labeling?" % (
+                        s, cnn_chains_dir, dm_chains_dir))
             # Get the strings to write to .bin file
-            article, abstract, labels = get_art_abs_lbs(story_file, label_file)
+            article, abstract, labels, chains = get_art_abs_lbs(story_file, label_file, chains_file)
             # Write to tf.Example
             tf_example = example_pb2.Example()
             tf_example.features.feature['article'].bytes_list.value.extend([str.encode(article)])
             tf_example.features.feature['abstract'].bytes_list.value.extend([str.encode(abstract)])
             tf_example.features.feature['labels'].bytes_list.value.extend([str.encode(labels)])
+            tf_example.features.feature['links'].bytes_list.value.extend([str.encode(chains)])
             tf_example_str = tf_example.SerializeToString()
             str_len = len(tf_example_str)
             writer.write(struct.pack('q', str_len))
@@ -255,10 +267,13 @@ def check_num_stories(stories_dir, num_expected):
 
 
 if __name__ == '__main__':
-    cnn_stories_dir = 'cnn_stories_tokenized'
-    cnn_label_dir = 'cnn_stories_labelled_p3'
-    dm_stories_dir = 'dm_stories_tokenized'
-    dm_label_dir = 'dm_stories_labelled_p3'
+    cnn_stories_dir = '../cnn_stories_tokenized'
+    cnn_label_dir = '../cnn_stories_labelled_p3'
+    cnn_chains_dir = '../cnn_stories_ner_heuristic_chain_labels' 
+    dm_stories_dir = '../dm_stories_tokenized'
+    dm_label_dir = '../dm_stories_labelled_p3'
+    dm_chains_dir = '../dm_stories_ner_heuristic_chain_labels'
+
 
     # Check the stories directories contain the correct number of .story files
     check_num_stories(cnn_stories_dir, num_expected_cnn_stories)

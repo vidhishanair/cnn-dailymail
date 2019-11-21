@@ -8,10 +8,11 @@ from tqdm import tqdm
 import os
 from make_datafiles import get_art_abs
 
-tqdm.monitor_interval = 0
+#tqdm.monitor_interval = 0
 from collections import Counter
 
-
+import spacy
+nlp = spacy.load("en_core_web_sm")
 
 def compile_substring(start, end, split):
     if start == end:
@@ -68,7 +69,26 @@ def make_BIO_tgt(s, t):
     # exit(0)
     return " ".join(edited_matches)
 
-def process(article, abstract):
+def get_heuristic_ner_chains(article, abstract):
+    sentences = article.split("<split1>")
+    sentences_mentions = [] 
+    for sent in sentences :
+        sentences_mentions.append([])
+        doc = nlp(sent)
+        for ent in doc.ents:
+            sentences_mentions[-1].extend(ent.text.lower().split(" "))
+    ent_tracker = {}
+    list_sent_arcs = []
+    for idx, sent in enumerate(sentences_mentions):
+        for ent in sent:
+            if ent in ent_tracker:
+                #print(ent, idx, ent_tracker[ent])
+                list_sent_arcs.append((idx, ent_tracker[ent]))
+        for ent in sent:
+            ent_tracker[ent] = idx
+    return str(list_sent_arcs)
+
+def process_content_sel_labels(article, abstract):
     ssplit = splits(article)
     # Skip empty lines
     if len(ssplit) < 2 or len(abstract.split()) < 2:
@@ -76,6 +96,15 @@ def process(article, abstract):
     # Build the target
     tgt = make_BIO_tgt(ssplit, abstract)
     return tgt
+
+def process_heuristic_chain_labels(article, abstract):
+    ssplit = splits(article)
+    # Skip empty lines
+    if len(ssplit) < 2 or len(abstract.split()) < 2:
+        return None
+    # Build the target
+    chains = get_heuristic_ner_chains(article, abstract)
+    return chains
 
 def old_main():
     lcounter = 0
@@ -128,42 +157,46 @@ def old_main():
 
 
 def main():
-    cnn_stories_dir = 'cnn_stories_tokenized'
-    cnn_label_dir = 'cnn_stories_labelled_p3'
-    dm_stories_dir = 'dm_stories_tokenized'
-    dm_label_dir = 'dm_stories_labelled_p3'
+    cnn_stories_dir = '../cnn_stories_tokenized'
+    cnn_label_dir = '../cnn_stories_ner_heuristic_chain_labels'
+    dm_stories_dir = '../dm_stories_tokenized'
+    dm_label_dir = '../dm_stories_ner_heuristic_chain_labels'
+    #if not os.path.exists(cnn_label_dir):
+    #    print("Creating cnn dir: ", cnn_label_dir)
+    #    os.mkdir(cnn_label_dir)
+    if not os.path.exists(dm_label_dir):
+       print("Creating DM dir: ", dm_label_dir)
+       os.mkdir(dm_label_dir)
 
-    stories_dir = cnn_stories_dir
-    out_dir = cnn_label_dir
-    stories = os.listdir(stories_dir)
-    for s in stories:
-        in_path = os.path.join(stories_dir, s)
-        out_path = os.path.join(out_dir, s)
-        article, abstract = get_art_abs(in_path)
-        tags = process(article, abstract)
-        if tags is None:
-            print(s)
-            tags = ""
-        fp = open(out_path, 'w')
-        fp.write(tags)
-        fp.close()
+    #stories_dir = cnn_stories_dir
+    #out_dir = cnn_label_dir
+    #stories = os.listdir(stories_dir)
+    #for s in tqdm(stories):
+    #    in_path = os.path.join(stories_dir, s)
+    #    out_path = os.path.join(out_dir, s)
+    #    article, abstract = get_art_abs(in_path)
+    #    tags = process_heuristic_chain_labels(article, abstract)
+    #    if tags is None:
+    #        print(s)
+    #        tags = ""
+    #    fp = open(out_path, 'w')
+    #    fp.write(tags)
+    #    fp.close()
     
     stories_dir = dm_stories_dir
     out_dir = dm_label_dir
     stories = os.listdir(stories_dir)
-    for s in stories:
+    for s in tqdm(stories):
         in_path = os.path.join(stories_dir, s)
         out_path = os.path.join(out_dir, s)
         article, abstract = get_art_abs(in_path)
-        tags = process(article, abstract)
+        tags = process_heuristic_chain_labels(article, abstract)
         if tags is None:
             print(s)
             tags = ""
         fp = open(out_path, 'w')
         fp.write(tags)
         fp.close()
-
-
 
 if __name__ == "__main__":
     main()
