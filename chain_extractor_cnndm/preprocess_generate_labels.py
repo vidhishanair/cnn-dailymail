@@ -6,7 +6,7 @@ import re
 # Get a counter for the iterations
 from tqdm import tqdm
 import os
-from make_datafiles import get_art_abs
+from chain_extractor_cnndm.make_tokenized_files import get_art_abs
 
 #tqdm.monitor_interval = 0
 from collections import Counter
@@ -106,97 +106,70 @@ def process_heuristic_chain_labels(article, abstract):
     chains = get_heuristic_ner_chains(article, abstract)
     return chains
 
-def old_main():
-    lcounter = 0
-    max_total = opt.num_examples
-
-    SOURCE_PATH = opt.src
-    TARGET_PATH = opt.tgt
-
-    NEW_TARGET_PATH = opt.output + ".txt"
-    PRED_SRC_PATH = opt.output + ".pred.txt"
-    PRED_TGT_PATH = opt.output + ".src.txt"
-
-    with codecs.open(SOURCE_PATH, 'r', "utf-8") as sfile:
-        for ix, l in enumerate(sfile):
-            lcounter += 1
-            if lcounter >= max_total:
-                break
-
-    sfile = codecs.open(SOURCE_PATH, 'r', "utf-8")
-    tfile = codecs.open(TARGET_PATH, 'r', "utf-8")
-    outf = codecs.open(NEW_TARGET_PATH, 'w', "utf-8", buffering=1)
-    outf_tgt_src = codecs.open(PRED_SRC_PATH, 'w', "utf-8", buffering=1)
-    outf_tgt_tgt = codecs.open(PRED_TGT_PATH, 'w', "utf-8", buffering=1)
-
-    actual_lines = 0
-    for ix, (s, t) in tqdm(enumerate(zip(sfile, tfile)), total=lcounter):
-        ssplit = splits(s, num=opt.prune)
-        # Skip empty lines
-        if len(ssplit) < 2 or len(t.split()) < 2:
-            continue
-        else:
-            actual_lines += 1
-        # Build the target
-        tgt = make_BIO_tgt(ssplit, t)
-        # Format for allennlp
-        for token, tag in zip(ssplit, tgt.split()):
-            outf.write(token + "###" + tag + " ")
-        outf.write("\n")
-        # Format for predicting with allennlp
-        outf_tgt_src.write(format_json(" ".join(ssplit)))
-        outf_tgt_tgt.write(tgt + "\n")
-        if actual_lines >= max_total:
-            break
-
-    sfile.close()
-    tfile.close()
-    outf.close()
-    outf_tgt_src.close()
-    outf_tgt_tgt.close()
-
-
-def main():
-    cnn_stories_dir = '../cnn_stories_tokenized'
-    cnn_label_dir = '../cnn_stories_ner_heuristic_chain_labels'
-    dm_stories_dir = '../dm_stories_tokenized'
-    dm_label_dir = '../dm_stories_ner_heuristic_chain_labels'
-    #if not os.path.exists(cnn_label_dir):
-    #    print("Creating cnn dir: ", cnn_label_dir)
-    #    os.mkdir(cnn_label_dir)
-    if not os.path.exists(dm_label_dir):
-       print("Creating DM dir: ", dm_label_dir)
-       os.mkdir(dm_label_dir)
-
-    #stories_dir = cnn_stories_dir
-    #out_dir = cnn_label_dir
-    #stories = os.listdir(stories_dir)
-    #for s in tqdm(stories):
-    #    in_path = os.path.join(stories_dir, s)
-    #    out_path = os.path.join(out_dir, s)
-    #    article, abstract = get_art_abs(in_path)
-    #    tags = process_heuristic_chain_labels(article, abstract)
-    #    if tags is None:
-    #        print(s)
-    #        tags = ""
-    #    fp = open(out_path, 'w')
-    #    fp.write(tags)
-    #    fp.close()
-    
-    stories_dir = dm_stories_dir
-    out_dir = dm_label_dir
-    stories = os.listdir(stories_dir)
+def write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir):
     for s in tqdm(stories):
         in_path = os.path.join(stories_dir, s)
-        out_path = os.path.join(out_dir, s)
+        ner_out_path = os.path.join(ner_out_dir, s)
+        contsel_out_path = os.path.join(contsel_out_dir, s)
         article, abstract = get_art_abs(in_path)
-        tags = process_heuristic_chain_labels(article, abstract)
+
+        links = process_heuristic_chain_labels(article, abstract)
+        if links is None:
+            print(s)
+            links = ""
+        fp = open(ner_out_path, 'w')
+        fp.write(links)
+        fp.close()
+
+        tags = make_BIO_tgt(article, abstract)
         if tags is None:
             print(s)
             tags = ""
-        fp = open(out_path, 'w')
+        fp = open(contsel_out_path, 'w')
         fp.write(tags)
         fp.close()
+
+
+def main():
+    # Directory names for input and output directories.
+
+    cnn_stories_dir = '../cnn_stories_tokenized'
+    cnn_ner_label_dir = '../cnn_stories_ner_heuristic_chain_labels'
+    cnn_contsel_tags_label_dir =  '../cnn_stories_contsel_tags_labels'
+    dm_stories_dir = '../dm_stories_tokenized'
+    dm_ner_label_dir = '../dm_stories_ner_heuristic_chain_labels'
+    dm_contsel_tags_label_dir = '../dm_stories_contsel_tags_labels'
+
+    if not os.path.exists(cnn_ner_label_dir):
+       print("Creating cnn dir: ", cnn_ner_label_dir)
+       os.mkdir(cnn_ner_label_dir)
+
+    if not os.path.exists(cnn_contsel_tags_label_dir):
+        print("Creating cnn dir: ", cnn_contsel_tags_label_dir)
+        os.mkdir(cnn_contsel_tags_label_dir)
+
+    if not os.path.exists(dm_ner_label_dir):
+       print("Creating DM dir: ", dm_ner_label_dir)
+       os.mkdir(dm_ner_label_dir)
+
+    if not os.path.exists(dm_contsel_tags_label_dir):
+        print("Creating DM dir: ", dm_contsel_tags_label_dir)
+        os.mkdir(dm_contsel_tags_label_dir)
+
+    # Write all cnn labels into new dirs
+    stories_dir = cnn_stories_dir
+    ner_out_dir = cnn_ner_label_dir
+    contsel_out_dir = cnn_contsel_tags_label_dir
+    stories = os.listdir(stories_dir)
+    write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
+
+    # Write all dm labels to new dir
+    stories_dir = dm_stories_dir
+    ner_out_dir = dm_ner_label_dir
+    contsel_out_dir = cnn_contsel_tags_label_dir
+    stories = os.listdir(stories_dir)
+    write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
+
 
 if __name__ == "__main__":
     main()

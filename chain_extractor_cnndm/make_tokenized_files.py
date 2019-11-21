@@ -118,6 +118,8 @@ def fix_missing_period(line):
 
 
 def get_art_abs(story_file):
+    # This function reads a story file and emits article and abstract. Modify as needed.
+
     lines = read_text_file(story_file)
 
     # Lowercase everything
@@ -227,7 +229,7 @@ def check_num_stories(stories_dir, num_expected):
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print("USAGE: python make_datafiles.py <cnn_stories_dir> <dailymail_stories_dir>")
+        print("USAGE: python make_tokenized_files.py <cnn_stories_dir> <dailymail_stories_dir>")
         sys.exit()
     cnn_stories_dir = sys.argv[1]
     dm_stories_dir = sys.argv[2]

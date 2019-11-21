@@ -20,10 +20,6 @@ all_train_urls = "../url_lists/all_train.txt"
 all_val_urls = "../url_lists/all_val.txt"
 all_test_urls = "../url_lists/all_test.txt"
 
-cnn_tokenized_stories_dir = "../cnn_stories_tokenized"
-dm_tokenized_stories_dir = "../dm_stories_tokenized"
-finished_files_dir = "../finished_files_wlabels_wnerchains"
-chunks_dir = os.path.join(finished_files_dir, "chunked")
 
 # These are the number of .story files we expect there to be in cnn_stories_dir and dm_stories_dir
 num_expected_cnn_stories = 92579
@@ -220,10 +216,10 @@ def write_to_bin(url_file, out_file, makevocab=False):
             elif os.path.isfile(os.path.join(dm_chains_dir, s)):
                 chains_file = os.path.join(dm_chains_dir, s)
             else:
-                continue
                 print(
-                    "Error: Couldn't find label story file %s in either label directories %s and %s. Was there an error during labeling?" % (
+                    "Error: Couldn't find chains story file %s in either label directories %s and %s. Was there an error during labeling?" % (
                         s, cnn_chains_dir, dm_chains_dir))
+
             # Get the strings to write to .bin file
             article, abstract, labels, chains = get_art_abs_lbs(story_file, label_file, chains_file)
             # Write to tf.Example
@@ -267,28 +263,29 @@ def check_num_stories(stories_dir, num_expected):
 
 
 if __name__ == '__main__':
-    cnn_stories_dir = '../cnn_stories_tokenized'
-    cnn_label_dir = '../cnn_stories_labelled_p3'
+    # Directory names for input and output directories.
+
+    cnn_tokenized_stories_dir = '../cnn_stories_tokenized'
+    cnn_label_dir = '../cnn_stories_contsel_tags_labels'
     cnn_chains_dir = '../cnn_stories_ner_heuristic_chain_labels' 
-    dm_stories_dir = '../dm_stories_tokenized'
-    dm_label_dir = '../dm_stories_labelled_p3'
+    dm_tokenized_stories_dir = '../dm_stories_tokenized'
+    dm_label_dir = '../dm_stories_contsel_tags_labels'
     dm_chains_dir = '../dm_stories_ner_heuristic_chain_labels'
+    finished_files_dir = "../finished_files_wlabels_wnerchains"
+    chunks_dir = os.path.join(finished_files_dir, "chunked")
 
 
     # Check the stories directories contain the correct number of .story files
-    check_num_stories(cnn_stories_dir, num_expected_cnn_stories)
-    check_num_stories(dm_stories_dir, num_expected_dm_stories)
+    # May skip this for new dataset where we don't know num.
+    check_num_stories(cnn_tokenized_stories_dir, num_expected_cnn_stories)
+    check_num_stories(dm_tokenized_stories_dir, num_expected_dm_stories)
     check_num_stories(cnn_label_dir, num_expected_cnn_stories)
     check_num_stories(dm_label_dir, num_expected_dm_stories)
+    check_num_stories(cnn_chains_dir, num_expected_cnn_stories)
+    check_num_stories(dm_chains_dir, num_expected_dm_stories)
 
     # # Create some new directories
-    # if not os.path.exists(cnn_tokenized_stories_dir): os.makedirs(cnn_tokenized_stories_dir)
-    # if not os.path.exists(dm_tokenized_stories_dir): os.makedirs(dm_tokenized_stories_dir)
     if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
-    #
-    # # Run stanford tokenizer on both stories dirs, outputting to tokenized stories directories
-    # tokenize_stories(cnn_stories_dir, cnn_tokenized_stories_dir)
-    # tokenize_stories(dm_stories_dir, dm_tokenized_stories_dir)
 
     # Read the tokenized stories, do a little postprocessing then write to bin files
     write_to_bin(all_test_urls, os.path.join(finished_files_dir, "test.bin"))
