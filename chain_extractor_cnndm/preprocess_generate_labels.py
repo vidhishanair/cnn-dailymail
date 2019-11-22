@@ -12,7 +12,7 @@ from chain_extractor_cnndm.make_tokenized_files import get_art_abs
 from collections import Counter
 
 import spacy
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_lg")
 
 def compile_substring(start, end, split):
     if start == end:
