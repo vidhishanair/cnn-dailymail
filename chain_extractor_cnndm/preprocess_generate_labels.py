@@ -6,7 +6,7 @@ import re
 # Get a counter for the iterations
 from tqdm import tqdm
 import os
-from chain_extractor_cnndm.make_tokenized_files import get_art_abs
+from make_tokenized_files import get_art_abs
 
 #tqdm.monitor_interval = 0
 from collections import Counter
@@ -103,28 +103,28 @@ def get_heuristic_ner_coref_chains(article, abstract):
     list_sent_arcs = {'coref':[], 'ner':[]}
     for idx, cluster in enumerate(doc._.coref_clusters):
         sentence_with_mention = []
-        print('cluster: ', cluster.main) # gives the representative of the cluster
+        #print('cluster: ', cluster.main) # gives the representative of the cluster
         for mention in cluster.mentions:
             sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > mention.end))
-            print('mention: ', mention, mention.start, mention.end, sentence_index)
+            #print('mention: ', mention, mention.start, mention.end, sentence_index)
             # Not counting references within a sentence.
             if sentence_index not in sentence_with_mention:
                 if len(sentence_with_mention) != 0:
                     for prev_sent in sentence_with_mention:
-                        print(mention, prev_sent, sentence_index)
+                        #print(mention, prev_sent, sentence_index)
                         list_sent_arcs['coref'].append({'cluster_idx':idx, 'mention_text':mention.text, 'head_id':prev_sent, 'tail_id':sentence_index})
                 sentence_with_mention.append(sentence_index)
 
     ent_tracker = {}
     for idx, ent in enumerate(doc.ents):
         sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > ent.end))
-        print('ent: ', ent, ent.start, ent.end, sentence_index)
+        #print('ent: ', ent, ent.start, ent.end, sentence_index)
         # Not counting references within a sentence.
         words = ent.text.split(" ")
         for word in words:
             if word in ent_tracker and sentence_index not in ent_tracker[word]:
                 for prev_sent in ent_tracker[word]:
-                    print(word, prev_sent, sentence_index)
+                    #print(word, prev_sent, sentence_index)
                     list_sent_arcs['ner'].append({'entity_idx':idx, 'entity_text':ent.text, 'head_id':prev_sent, 'tail_id':sentence_index})
                 for word in words:
                     if word in ent_tracker:
@@ -134,7 +134,7 @@ def get_heuristic_ner_coref_chains(article, abstract):
                 break
             if word not in ent_tracker:
                 ent_tracker[word] = [sentence_index]
-
+    #print(list_sent_arcs)
     return str(list_sent_arcs)
 
 def process_content_sel_labels(article, abstract):
@@ -156,7 +156,7 @@ def process_heuristic_chain_labels(article, abstract):
     return chains
 
 def write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir):
-    for s in tqdm(stories):
+    for s in tqdm(stories[0:10]):
         in_path = os.path.join(stories_dir, s)
         ner_out_path = os.path.join(ner_out_dir, s)
         contsel_out_path = os.path.join(contsel_out_dir, s)

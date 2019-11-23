@@ -189,24 +189,24 @@ def write_to_bin(url_file, out_file, makevocab=False):
                 story_file = os.path.join(cnn_tokenized_stories_dir, s)
             elif os.path.isfile(os.path.join(dm_tokenized_stories_dir, s)):
                 story_file = os.path.join(dm_tokenized_stories_dir, s)
-            else:
+            else: 
                 print(
                     "Error: Couldn't find tokenized story file %s in either tokenized story directories %s and %s. Was there an error during tokenization?" % (
                     s, cnn_tokenized_stories_dir, dm_tokenized_stories_dir))
                 # Check again if tokenized stories directories contain correct number of files
-                print("Checking that the tokenized stories directories %s and %s contain correct number of files..." % (
-                cnn_tokenized_stories_dir, dm_tokenized_stories_dir))
-                check_num_stories(cnn_tokenized_stories_dir, num_expected_cnn_stories)
-                check_num_stories(dm_tokenized_stories_dir, num_expected_dm_stories)
-                raise Exception(
-                    "Tokenized stories directories %s and %s contain correct number of files but story file %s found in neither." % (
-                    cnn_tokenized_stories_dir, dm_tokenized_stories_dir, s))
-            
+                #print("Checking that the tokenized stories directories %s and %s contain correct number of files..." % (
+                #cnn_tokenized_stories_dir, dm_tokenized_stories_dir))
+                #check_num_stories(cnn_tokenized_stories_dir, num_expected_cnn_stories)
+                #check_num_stories(dm_tokenized_stories_dir, num_expected_dm_stories)
+                #raise Exception(
+                #    "Tokenized stories directories %s and %s contain correct number of files but story file %s found in neither." % (
+                #    cnn_tokenized_stories_dir, dm_tokenized_stories_dir, s))
             if os.path.isfile(os.path.join(cnn_label_dir, s)):
                 label_file = os.path.join(cnn_label_dir, s)
             elif os.path.isfile(os.path.join(dm_label_dir, s)):
                 label_file = os.path.join(dm_label_dir, s)
             else:
+                continue
                 print(
                     "Error: Couldn't find label story file %s in either label directories %s and %s. Was there an error during labeling?" % (
                         s, cnn_label_dir, dm_label_dir))
@@ -216,10 +216,11 @@ def write_to_bin(url_file, out_file, makevocab=False):
             elif os.path.isfile(os.path.join(dm_chains_dir, s)):
                 chains_file = os.path.join(dm_chains_dir, s)
             else:
+                continue
                 print(
                     "Error: Couldn't find chains story file %s in either label directories %s and %s. Was there an error during labeling?" % (
                         s, cnn_chains_dir, dm_chains_dir))
-
+            print("processing: "+s)
             # Get the strings to write to .bin file
             article, abstract, labels, chains = get_art_abs_lbs(story_file, label_file, chains_file)
             # Write to tf.Example
@@ -277,12 +278,12 @@ if __name__ == '__main__':
 
     # Check the stories directories contain the correct number of .story files
     # May skip this for new dataset where we don't know num.
-    check_num_stories(cnn_tokenized_stories_dir, num_expected_cnn_stories)
-    check_num_stories(dm_tokenized_stories_dir, num_expected_dm_stories)
-    check_num_stories(cnn_label_dir, num_expected_cnn_stories)
-    check_num_stories(dm_label_dir, num_expected_dm_stories)
-    check_num_stories(cnn_chains_dir, num_expected_cnn_stories)
-    check_num_stories(dm_chains_dir, num_expected_dm_stories)
+    #check_num_stories(cnn_tokenized_stories_dir, num_expected_cnn_stories)
+    #check_num_stories(dm_tokenized_stories_dir, num_expected_dm_stories)
+    #check_num_stories(cnn_label_dir, num_expected_cnn_stories)
+    #check_num_stories(dm_label_dir, num_expected_dm_stories)
+    #check_num_stories(cnn_chains_dir, num_expected_cnn_stories)
+    #check_num_stories(dm_chains_dir, num_expected_dm_stories)
 
     # # Create some new directories
     if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
