@@ -12,7 +12,10 @@ from chain_extractor_cnndm.make_tokenized_files import get_art_abs
 from collections import Counter
 
 import spacy
+import neuralcoref
+
 nlp = spacy.load("en_core_web_lg")
+neuralcoref.add_to_pipe(nlp)
 
 def compile_substring(start, end, split):
     if start == end:
@@ -82,10 +85,74 @@ def get_heuristic_ner_chains(article, abstract):
     for idx, sent in enumerate(sentences_mentions):
         for ent in sent:
             if ent in ent_tracker:
-                #print(ent, idx, ent_tracker[ent])
-                list_sent_arcs.append((idx, ent_tracker[ent]))
+                for parent_idx in ent_tracker[ent]:
+                   #print(ent, idx, ent_tracker[ent])
+                    list_sent_arcs.append((idx, parent_idx))
         for ent in sent:
-            ent_tracker[ent] = idx
+            if ent in ent_tracker:
+                ent_tracker[ent].append(idx)
+            else:
+                ent_tracker[ent] = [idx]
+    return str(list_sent_arcs)
+
+def get_heuristic_coref_chains(article, abstract):
+    sent_len = [len(nlp(x)) for x in article.split('<split1>')]
+    sentence_delim = [sum(sent_len[:i+1]) for i in range(len(sent_len))]
+    nb_sentences = len(sentence_delim)
+    doc = nlp(article.replace('<split1>', ' '))
+    list_sent_arcs = {'coref':[], 'ner':[]}
+    for cluster in doc._.coref_clusters:
+        sentence_with_mention = []
+        print('cluster: ', cluster.main) # gives the representative of the cluster
+        for mention in cluster.mentions:
+            sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > mention.end))
+            print('mention: ', mention, mention.start, mention.end)
+            # Not counting references within a sentence.
+            if sentence_index not in sentence_with_mention:
+                if len(sentence_with_mention) != 0:
+                    for prev_sent in sentence_with_mention:
+                        list_sent_arcs['coref'].append((prev_sent, sentence_index))
+                sentence_with_mention.append(sentence_index)
+
+    ent_tracker = {}
+    for ent in doc.ents:
+        sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > ent.end))
+        print('ent: ', ent, ent.start, ent.end)
+        # Not counting references within a sentence.
+        words = ent.text.split(" ")
+        for word in words:
+            if word in ent_tracker and sentence_index not in ent_tracker[word]:
+                for prev_sent in ent_tracker[word]:
+                    print(word, prev_sent, sentence_index)
+                    list_sent_arcs['ner'].append((prev_sent, sentence_index))
+            if word in ent_tracker:
+                for word in words:
+                    ent_tracker[word].append(sentence_index)
+                break
+            else:
+                for word in words:
+                    ent_tracker[word] = [sentence_index]
+                break
+
+    return str(list_sent_arcs)
+
+def get_heuristic_ner_coref_chains(article, abstract):
+    sent_len = [len(nlp(x)) for x in article.split('<split1>')]
+    sentence_delim = [sum(sent_len[:i+1]) for i in range(len(sent_len))]
+    nb_sentences = len(sentence_delim)
+    doc = nlp(article.replace('<split1>', ' . '))
+    for cluster in doc._.coref_clusters:
+        sentence_with_mention = []
+        print('cluster: ', cluster.main) # gives the representative of the cluster
+        for mention in cluster.mentions:
+            sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > mention.end))
+            print('mention: ', mention, mention.start, mention.end)
+            # Not counting references within a sentence.
+            if sentence_index not in sentence_with_mention:
+                if len(sentence_with_mention) != 0:
+                    print(sentence_index, sentence_with_mention)
+                sentence_with_mention.append(sentence_index)
+
     return str(list_sent_arcs)
 
 def process_content_sel_labels(article, abstract):
