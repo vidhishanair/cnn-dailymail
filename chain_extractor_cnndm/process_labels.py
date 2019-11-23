@@ -267,11 +267,11 @@ if __name__ == '__main__':
 
     cnn_tokenized_stories_dir = '../cnn_stories_tokenized'
     cnn_label_dir = '../cnn_stories_contsel_tags_labels'
-    cnn_chains_dir = '../cnn_stories_ner_heuristic_chain_labels' 
+    cnn_chains_dir = '../cnn_stories_ner_coref_heuristic_chain_labels'
     dm_tokenized_stories_dir = '../dm_stories_tokenized'
     dm_label_dir = '../dm_stories_contsel_tags_labels'
-    dm_chains_dir = '../dm_stories_ner_heuristic_chain_labels'
-    finished_files_dir = "../finished_files_wlabels_wnerchains"
+    dm_chains_dir = '../dm_stories_ner_coref_heuristic_chain_labels'
+    finished_files_dir = "../finished_files_wlabels_wner_wcoref_chains"
     chunks_dir = os.path.join(finished_files_dir, "chunked")
 
 

@@ -72,86 +72,68 @@ def make_BIO_tgt(s, t):
     # exit(0)
     return " ".join(edited_matches)
 
-def get_heuristic_ner_chains(article, abstract):
-    sentences = article.split("<split1>")
-    sentences_mentions = [] 
-    for sent in sentences :
-        sentences_mentions.append([])
-        doc = nlp(sent)
-        for ent in doc.ents:
-            sentences_mentions[-1].extend(ent.text.lower().split(" "))
-    ent_tracker = {}
-    list_sent_arcs = []
-    for idx, sent in enumerate(sentences_mentions):
-        for ent in sent:
-            if ent in ent_tracker:
-                for parent_idx in ent_tracker[ent]:
-                   #print(ent, idx, ent_tracker[ent])
-                    list_sent_arcs.append((idx, parent_idx))
-        for ent in sent:
-            if ent in ent_tracker:
-                ent_tracker[ent].append(idx)
-            else:
-                ent_tracker[ent] = [idx]
-    return str(list_sent_arcs)
+# def get_heuristic_ner_chains(article, abstract):
+#     sentences = article.split("<split1>")
+#     sentences_mentions = []
+#     for sent in sentences :
+#         sentences_mentions.append([])
+#         doc = nlp(sent)
+#         for ent in doc.ents:
+#             sentences_mentions[-1].extend(ent.text.lower().split(" "))
+#     ent_tracker = {}
+#     list_sent_arcs = []
+#     for idx, sent in enumerate(sentences_mentions):
+#         for ent in sent:
+#             if ent in ent_tracker:
+#                 for parent_idx in ent_tracker[ent]:
+#                    #print(ent, idx, ent_tracker[ent])
+#                     list_sent_arcs.append((idx, parent_idx))
+#         for ent in sent:
+#             if ent in ent_tracker:
+#                 ent_tracker[ent].append(idx)
+#             else:
+#                 ent_tracker[ent] = [idx]
+#     return str(list_sent_arcs)
 
-def get_heuristic_coref_chains(article, abstract):
+def get_heuristic_ner_coref_chains(article, abstract):
     sent_len = [len(nlp(x)) for x in article.split('<split1>')]
     sentence_delim = [sum(sent_len[:i+1]) for i in range(len(sent_len))]
     nb_sentences = len(sentence_delim)
     doc = nlp(article.replace('<split1>', ' '))
     list_sent_arcs = {'coref':[], 'ner':[]}
-    for cluster in doc._.coref_clusters:
+    for idx, cluster in enumerate(doc._.coref_clusters):
         sentence_with_mention = []
         print('cluster: ', cluster.main) # gives the representative of the cluster
         for mention in cluster.mentions:
             sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > mention.end))
-            print('mention: ', mention, mention.start, mention.end)
+            print('mention: ', mention, mention.start, mention.end, sentence_index)
             # Not counting references within a sentence.
             if sentence_index not in sentence_with_mention:
                 if len(sentence_with_mention) != 0:
                     for prev_sent in sentence_with_mention:
-                        list_sent_arcs['coref'].append((prev_sent, sentence_index))
+                        print(mention, prev_sent, sentence_index)
+                        list_sent_arcs['coref'].append({'cluster_idx':idx, 'mention_text':mention.text, 'head_id':prev_sent, 'tail_id':sentence_index})
                 sentence_with_mention.append(sentence_index)
 
     ent_tracker = {}
-    for ent in doc.ents:
+    for idx, ent in enumerate(doc.ents):
         sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > ent.end))
-        print('ent: ', ent, ent.start, ent.end)
+        print('ent: ', ent, ent.start, ent.end, sentence_index)
         # Not counting references within a sentence.
         words = ent.text.split(" ")
         for word in words:
             if word in ent_tracker and sentence_index not in ent_tracker[word]:
                 for prev_sent in ent_tracker[word]:
                     print(word, prev_sent, sentence_index)
-                    list_sent_arcs['ner'].append((prev_sent, sentence_index))
-            if word in ent_tracker:
+                    list_sent_arcs['ner'].append({'entity_idx':idx, 'entity_text':ent.text, 'head_id':prev_sent, 'tail_id':sentence_index})
                 for word in words:
-                    ent_tracker[word].append(sentence_index)
+                    if word in ent_tracker:
+                        ent_tracker[word].append(sentence_index)
+                    else:
+                        ent_tracker[word] = [sentence_index]
                 break
-            else:
-                for word in words:
-                    ent_tracker[word] = [sentence_index]
-                break
-
-    return str(list_sent_arcs)
-
-def get_heuristic_ner_coref_chains(article, abstract):
-    sent_len = [len(nlp(x)) for x in article.split('<split1>')]
-    sentence_delim = [sum(sent_len[:i+1]) for i in range(len(sent_len))]
-    nb_sentences = len(sentence_delim)
-    doc = nlp(article.replace('<split1>', ' . '))
-    for cluster in doc._.coref_clusters:
-        sentence_with_mention = []
-        print('cluster: ', cluster.main) # gives the representative of the cluster
-        for mention in cluster.mentions:
-            sentence_index = sentence_delim.index(min(i for i in sentence_delim if i > mention.end))
-            print('mention: ', mention, mention.start, mention.end)
-            # Not counting references within a sentence.
-            if sentence_index not in sentence_with_mention:
-                if len(sentence_with_mention) != 0:
-                    print(sentence_index, sentence_with_mention)
-                sentence_with_mention.append(sentence_index)
+            if word not in ent_tracker:
+                ent_tracker[word] = [sentence_index]
 
     return str(list_sent_arcs)
 
@@ -170,7 +152,7 @@ def process_heuristic_chain_labels(article, abstract):
     if len(ssplit) < 2 or len(abstract.split()) < 2:
         return None
     # Build the target
-    chains = get_heuristic_ner_chains(article, abstract)
+    chains = get_heuristic_ner_coref_chains(article, abstract)
     return chains
 
 def write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir):
@@ -201,10 +183,10 @@ def main():
     # Directory names for input and output directories.
 
     cnn_stories_dir = '../cnn_stories_tokenized'
-    cnn_ner_label_dir = '../cnn_stories_ner_heuristic_chain_labels'
+    cnn_ner_label_dir = '../cnn_stories_ner_coref_heuristic_chain_labels'
     cnn_contsel_tags_label_dir =  '../cnn_stories_contsel_tags_labels'
     dm_stories_dir = '../dm_stories_tokenized'
-    dm_ner_label_dir = '../dm_stories_ner_heuristic_chain_labels'
+    dm_ner_label_dir = '../dm_stories_ner_coref_heuristic_chain_labels'
     dm_contsel_tags_label_dir = '../dm_stories_contsel_tags_labels'
 
     if not os.path.exists(cnn_ner_label_dir):
