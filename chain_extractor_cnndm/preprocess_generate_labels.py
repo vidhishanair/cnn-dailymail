@@ -182,42 +182,52 @@ def write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir):
 def main():
     # Directory names for input and output directories.
 
-    cnn_stories_dir = '../cnn_stories_tokenized'
-    cnn_ner_label_dir = '../cnn_stories_ner_coref_heuristic_chain_labels'
-    cnn_contsel_tags_label_dir =  '../cnn_stories_contsel_tags_labels'
-    dm_stories_dir = '../dm_stories_tokenized'
-    dm_ner_label_dir = '../dm_stories_ner_coref_heuristic_chain_labels'
-    dm_contsel_tags_label_dir = '../dm_stories_contsel_tags_labels'
+    parser = argparse.ArgumentParser(description='Script to preprocess tokenized files')
+    parser.add_argument('--input_dir', type=str, default=None, help='location of the input dir')
+    parser.add_argument('--ner_output_dir', type=str, default=None, help='location of the output dir')
+    parser.add_argument('--contsel_output_dir', type=str, default=None, help='location of the output dir')
+    args = parser.parse_args()
 
+    if not os.path.exists(args.input_dir):
+        print("Folder: "+args.input_dir+" doesn't exist")
+        exit()
+
+    # cnn_stories_dir = '../cnn_stories_tokenized'
+    # cnn_ner_label_dir = '../cnn_stories_ner_heuristic_chain_labels'
+    # cnn_contsel_tags_label_dir =  '../cnn_stories_contsel_tags_labels'
+    # dm_stories_dir = '../dm_stories_tokenized'
+    # dm_ner_label_dir = '../dm_stories_ner_heuristic_chain_labels'
+    # dm_contsel_tags_label_dir = '../dm_stories_contsel_tags_labels'
+    #
     # if not os.path.exists(cnn_ner_label_dir):
     #    print("Creating cnn dir: ", cnn_ner_label_dir)
     #    os.mkdir(cnn_ner_label_dir)
-
+    #
     # if not os.path.exists(cnn_contsel_tags_label_dir):
     #     print("Creating cnn dir: ", cnn_contsel_tags_label_dir)
     #     os.mkdir(cnn_contsel_tags_label_dir)
+    #
+    # if not os.path.exists(dm_ner_label_dir):
+    #    print("Creating DM dir: ", dm_ner_label_dir)
+    #    os.mkdir(dm_ner_label_dir)
+    #
+    # if not os.path.exists(dm_contsel_tags_label_dir):
+    #     print("Creating DM dir: ", dm_contsel_tags_label_dir)
+    #     os.mkdir(dm_contsel_tags_label_dir)
 
-    if not os.path.exists(dm_ner_label_dir):
-       print("Creating DM dir: ", dm_ner_label_dir)
-       os.mkdir(dm_ner_label_dir)
+    # Write all labels labels into new dirs
+    stories_dir = args.input_dir
+    ner_out_dir = args.ner_output_dir
+    contsel_out_dir = args.contsel_output_dir
+    stories = os.listdir(stories_dir)
+    write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
 
-    if not os.path.exists(dm_contsel_tags_label_dir):
-        print("Creating DM dir: ", dm_contsel_tags_label_dir)
-        os.mkdir(dm_contsel_tags_label_dir)
-
-    # Write all cnn labels into new dirs
-    # stories_dir = cnn_stories_dir
-    # ner_out_dir = cnn_ner_label_dir
+    # # Write all dm labels to new dir
+    # stories_dir = dm_stories_dir
+    # ner_out_dir = dm_ner_label_dir
     # contsel_out_dir = cnn_contsel_tags_label_dir
     # stories = os.listdir(stories_dir)
     # write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
-
-    # Write all dm labels to new dir
-    stories_dir = dm_stories_dir
-    ner_out_dir = dm_ner_label_dir
-    contsel_out_dir = dm_contsel_tags_label_dir
-    stories = os.listdir(stories_dir)
-    write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
 
 
 if __name__ == "__main__":
