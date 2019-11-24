@@ -15,7 +15,7 @@ import spacy
 import neuralcoref
 
 nlp = spacy.load("en_core_web_lg")
-neuralcoref.add_to_pipe(nlp, max_dist=100)
+neuralcoref.add_to_pipe(nlp, max_dist=1000)
 
 def compile_substring(start, end, split):
     if start == end:
