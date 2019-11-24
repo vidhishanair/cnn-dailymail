@@ -15,7 +15,7 @@ import spacy
 import neuralcoref
 
 nlp = spacy.load("en_core_web_lg")
-neuralcoref.add_to_pipe(nlp)
+neuralcoref.add_to_pipe(nlp, max_dist=100)
 
 def compile_substring(start, end, split):
     if start == end:
@@ -33,7 +33,7 @@ def splits(s, num=200):
 
 def make_BIO_tgt(s, t):
     # tsplit = t.split()
-    ssplit = s  # .split()
+    ssplit = s.split()
     startix = 0
     endix = 0
     matches = []
@@ -156,7 +156,7 @@ def process_heuristic_chain_labels(article, abstract):
     return chains
 
 def write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir):
-    for s in tqdm(stories[0:10]):
+    for s in tqdm(stories):
         in_path = os.path.join(stories_dir, s)
         ner_out_path = os.path.join(ner_out_dir, s)
         contsel_out_path = os.path.join(contsel_out_dir, s)
@@ -164,7 +164,7 @@ def write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir):
 
         links = process_heuristic_chain_labels(article, abstract)
         if links is None:
-            print(s)
+            print(s, links)
             links = ""
         fp = open(ner_out_path, 'w')
         fp.write(links)
@@ -172,7 +172,7 @@ def write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir):
 
         tags = make_BIO_tgt(article, abstract)
         if tags is None:
-            print(s)
+            print(s, tags)
             tags = ""
         fp = open(contsel_out_path, 'w')
         fp.write(tags)
@@ -189,13 +189,13 @@ def main():
     dm_ner_label_dir = '../dm_stories_ner_coref_heuristic_chain_labels'
     dm_contsel_tags_label_dir = '../dm_stories_contsel_tags_labels'
 
-    if not os.path.exists(cnn_ner_label_dir):
-       print("Creating cnn dir: ", cnn_ner_label_dir)
-       os.mkdir(cnn_ner_label_dir)
+    # if not os.path.exists(cnn_ner_label_dir):
+    #    print("Creating cnn dir: ", cnn_ner_label_dir)
+    #    os.mkdir(cnn_ner_label_dir)
 
-    if not os.path.exists(cnn_contsel_tags_label_dir):
-        print("Creating cnn dir: ", cnn_contsel_tags_label_dir)
-        os.mkdir(cnn_contsel_tags_label_dir)
+    # if not os.path.exists(cnn_contsel_tags_label_dir):
+    #     print("Creating cnn dir: ", cnn_contsel_tags_label_dir)
+    #     os.mkdir(cnn_contsel_tags_label_dir)
 
     if not os.path.exists(dm_ner_label_dir):
        print("Creating DM dir: ", dm_ner_label_dir)
@@ -206,16 +206,16 @@ def main():
         os.mkdir(dm_contsel_tags_label_dir)
 
     # Write all cnn labels into new dirs
-    stories_dir = cnn_stories_dir
-    ner_out_dir = cnn_ner_label_dir
-    contsel_out_dir = cnn_contsel_tags_label_dir
-    stories = os.listdir(stories_dir)
-    write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
+    # stories_dir = cnn_stories_dir
+    # ner_out_dir = cnn_ner_label_dir
+    # contsel_out_dir = cnn_contsel_tags_label_dir
+    # stories = os.listdir(stories_dir)
+    # write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
 
     # Write all dm labels to new dir
     stories_dir = dm_stories_dir
     ner_out_dir = dm_ner_label_dir
-    contsel_out_dir = cnn_contsel_tags_label_dir
+    contsel_out_dir = dm_contsel_tags_label_dir
     stories = os.listdir(stories_dir)
     write_labels(ner_out_dir, contsel_out_dir, stories, stories_dir)
 
