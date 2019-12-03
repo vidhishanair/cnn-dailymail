@@ -2,6 +2,7 @@ import sys
 import os
 import hashlib
 import struct
+import random
 import subprocess
 import collections
 import tensorflow as tf
@@ -19,6 +20,14 @@ SENTENCE_END = '</s>'
 all_train_urls = "../url_lists/all_train.txt"
 all_val_urls = "../url_lists/all_val.txt"
 all_test_urls = "../url_lists/all_test.txt"
+
+cnn_train_urls = "../url_lists/cnn_wayback_training_urls.txt"
+cnn_val_urls = "../url_lists/cnn_wayback_validation_urls.txt"
+cnn_test_urls = "../url_lists/cnn_wayback_test_urls.txt"
+
+dm_train_urls = "../url_lists/dailymail_wayback_training_urls.txt"
+dm_val_urls = "../url_lists/dailymail_wayback_validation_urls.txt"
+dm_test_urls = "../url_lists/dailymail_wayback_test_urls.txt"
 
 
 # These are the number of .story files we expect there to be in cnn_stories_dir and dm_stories_dir
@@ -167,10 +176,18 @@ def get_art_abs_lbs(story_file, label_file, chains_file):
     return article, abstract, labels, chains
 
 
-def write_to_bin(url_file, out_file, makevocab=False):
+def write_to_bin(url_file, out_file, makevocab=False, train=False, create_low_resource_set=False):
     """Reads the tokenized .story files corresponding to the urls listed in the url_file and writes them to a out_file."""
-    print("Making bin file for URLs listed in %s..." % url_file)
-    url_list = read_text_file(url_file)
+    if create_low_resource_set:
+        if train:
+            print("Making bin file for URLs listed in %s..." % url_file)
+            url_list = random.sample(population=read_text_file(url_file), k=10000)
+        else:
+            print("Making bin file for URLs listed in %s..." % url_file)
+            url_list = random.sample(population=read_text_file(url_file), k=2000)
+    else:
+        print("Making bin file for URLs listed in %s..." % url_file)
+        url_list = read_text_file(url_file)
     url_hashes = get_url_hashes(url_list)
     story_fnames = [s + ".story" for s in url_hashes]
     num_stories = len(story_fnames)
@@ -218,7 +235,6 @@ def write_to_bin(url_file, out_file, makevocab=False):
                 print(
                     "Error: Couldn't find chains story file %s in either label directories %s and %s. Was there an error during labeling?" % (
                         s, cnn_chains_dir, dm_chains_dir))
-            print("processing: "+s)
             # Get the strings to write to .bin file
             article, abstract, labels, chains = get_art_abs_lbs(story_file, label_file, chains_file)
             # Write to tf.Example
@@ -270,8 +286,13 @@ if __name__ == '__main__':
     dm_tokenized_stories_dir = '../dm_stories_tokenized'
     dm_label_dir = '../dm_stories_contsel_tags_labels'
     dm_chains_dir = '../dm_stories_ner_coref_heuristic_chain_labels'
-    finished_files_dir = "../finished_files_wlabels_wner_wcoref_chains"
+
+    # finished_files_dir = "../finished_files_wlabels_wner_wcoref_chains"
+    finished_files_dir = "../finished_files_cnn_lowres"
     chunks_dir = os.path.join(finished_files_dir, "chunked")
+
+    dataset = 'cnn'
+    create_low_resource = True
 
 
     # Check the stories directories contain the correct number of .story files
@@ -287,9 +308,21 @@ if __name__ == '__main__':
     if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
 
     # Read the tokenized stories, do a little postprocessing then write to bin files
-    write_to_bin(all_test_urls, os.path.join(finished_files_dir, "test.bin"))
-    write_to_bin(all_val_urls, os.path.join(finished_files_dir, "val.bin"))
-    write_to_bin(all_train_urls, os.path.join(finished_files_dir, "train.bin"), makevocab=True)
+    if dataset == 'cnn':
+        train_urls = cnn_train_urls
+        val_urls = cnn_val_urls
+        test_urls = cnn_test_urls
+    elif dataset == 'dm':
+        train_urls = dm_train_urls
+        val_urls = dm_val_urls
+        test_urls = dm_test_urls
+    else:
+        train_urls = all_train_urls
+        val_urls = all_val_urls
+        test_urls = all_test_urls
+    write_to_bin(test_urls, os.path.join(finished_files_dir, "test.bin"))
+    write_to_bin(val_urls, os.path.join(finished_files_dir, "val.bin"))
+    write_to_bin(train_urls, os.path.join(finished_files_dir, "train.bin"), makevocab=True, train=True)
 
     # Chunk the data. This splits each of train.bin, val.bin and test.bin into smaller chunks, each containing e.g. 1000 examples, and saves them in finished_files/chunks
     chunk_all()
