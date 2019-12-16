@@ -181,10 +181,16 @@ def write_to_bin(url_file, out_file, makevocab=False, train=False, create_low_re
     if create_low_resource_set:
         if train:
             print("Making bin file for URLs listed in %s..." % url_file)
-            url_list = random.sample(population=read_text_file(url_file), k=10000)
+            initial_url_list = read_text_file(url_file)
+            url_list = random.sample(population=initial_url_list, k=10000)
+            print("Initial size: "+str(len(initial_url_list)))
+            print("Final size: "+str(len(url_list)))
         else:
             print("Making bin file for URLs listed in %s..." % url_file)
-            url_list = random.sample(population=read_text_file(url_file), k=2000)
+            initial_url_list = read_text_file(url_file)
+            url_list = random.sample(population=initial_url_list, k=1000)
+            print("Initial size: "+str(len(initial_url_list)))
+            print("Final size: "+str(len(url_list)))
     else:
         print("Making bin file for URLs listed in %s..." % url_file)
         url_list = read_text_file(url_file)
@@ -197,7 +203,7 @@ def write_to_bin(url_file, out_file, makevocab=False, train=False, create_low_re
 
     with open(out_file, 'wb') as writer:
         for idx, s in enumerate(story_fnames):
-            if idx % 1000 == 0:
+            if idx % 200 == 0:
                 print("Writing story %i of %i; %.2f percent done" % (
                 idx, num_stories, float(idx) * 100.0 / float(num_stories)))
 
@@ -288,11 +294,11 @@ if __name__ == '__main__':
     dm_chains_dir = '../dm_stories_ner_coref_heuristic_chain_labels'
 
     # finished_files_dir = "../finished_files_wlabels_wner_wcoref_chains"
-    finished_files_dir = "../finished_files_cnn_lowres"
+    finished_files_dir = "../finished_files_both_lowres_v1"
     chunks_dir = os.path.join(finished_files_dir, "chunked")
 
-    dataset = 'cnn'
-    create_low_resource = True
+    dataset = 'ab'
+    create_low_resource_set = True
 
 
     # Check the stories directories contain the correct number of .story files
@@ -320,9 +326,9 @@ if __name__ == '__main__':
         train_urls = all_train_urls
         val_urls = all_val_urls
         test_urls = all_test_urls
-    write_to_bin(test_urls, os.path.join(finished_files_dir, "test.bin"))
-    write_to_bin(val_urls, os.path.join(finished_files_dir, "val.bin"))
-    write_to_bin(train_urls, os.path.join(finished_files_dir, "train.bin"), makevocab=True, train=True)
+    write_to_bin(test_urls, os.path.join(finished_files_dir, "test.bin"), create_low_resource_set=create_low_resource_set)
+    write_to_bin(val_urls, os.path.join(finished_files_dir, "val.bin"), create_low_resource_set=create_low_resource_set)
+    write_to_bin(train_urls, os.path.join(finished_files_dir, "train.bin"), makevocab=True, train=True, create_low_resource_set=create_low_resource_set)
 
     # Chunk the data. This splits each of train.bin, val.bin and test.bin into smaller chunks, each containing e.g. 1000 examples, and saves them in finished_files/chunks
     chunk_all()
